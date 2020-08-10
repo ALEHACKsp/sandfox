@@ -1,0 +1,10 @@
+{
+	"C_Cpp.default.includePath": [
+		"src/cgtb"
+	],
+	"editor.comments.insertSpace": false,
+	"editor.insertSpaces": false,
+	"editor.detectIndentation": false,
+	"python.linting.pylintEnabled": true,
+	"python.linting.enabled": true,
+}
