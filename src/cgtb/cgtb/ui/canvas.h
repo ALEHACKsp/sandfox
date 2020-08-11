@@ -3,9 +3,12 @@
 struct NVGcontext;
 
 #include <vector>
+#include <queue>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <functional>
+#include <array>
 #include <map>
 
 #include <cgtb/ui.h>
@@ -22,22 +25,34 @@ namespace cgtb::ui {
 		// Probably also want to add the whole screen to 'dirty'.
 		bool clear = false;
 
-		// The NanoVG context to use for rendering.
-		// This is passed to all elements when calling their render().
-		NVGcontext *nvgc = 0;
+		struct shared_state {
 
-		// Usually the size of the render texture or buffer that will be rendered to.
-		// Though, it can be any arbitrary size.
-		// These values are passed to nvgBegin() within begin().
-		point size;
+			// The NanoVG context to use for rendering.
+			// This is passed to all elements when calling their render().
+			NVGcontext *nvgc = 0;
 
-		// The location of the mouse cursor relative to 'size'.
-		point cursor;
+			// Usually the size of the render texture or buffer that will be rendered to.
+			// Though, it can be any arbitrary size.
+			// These values are passed to nvgBegin() within begin().
+			point size;
 
-		// If false, 'cursor' will be ignored.
-		// As in, it doesn't exist.
-		// Used when the mouse has travelled off-screen
-		bool cursor_enabled = false;
+			// The location of the mouse cursor relative to 'size'.
+			point cursor;
+
+			// If false, 'cursor' will be ignored.
+			// As in, it doesn't exist.
+			// Used when the mouse has travelled off-screen
+			bool cursor_enabled = false;
+
+			// Store the immediate state of any particular mouse button here.
+			std::array<bool, 8> mouse_buttons { };
+
+			// Used to store state of the mouse buttons from the last frame.
+			std::array<bool, 8> mouse_buttons_previous { };
+
+		};
+
+		std::shared_ptr<shared_state> state;
 
 		// 'proposed' are the elements generated this frame via emit().
 		// 'finalized' are the elements generated last frame.
@@ -77,6 +92,6 @@ namespace cgtb::ui {
 		// If the element is determined to have "moved" then the respective areas of the screen are marked as dirty.
 		// The element will be added to the 'proposed' element's and this function will return which layer it exists on.
 		// Don't use the same UUID for two distinct elements.
-		int emit(const std::string_view &uuid, const area &body, std::function<action(const element &)> poll, std::function<void(NVGcontext *, const element &)> render);
+		int emit(const std::string_view &uuid, const area &body, std::function<action(const element &, void *)> poll, std::function<void(NVGcontext *, const element &, void *)> render, void *state = 0);
 	};
 }

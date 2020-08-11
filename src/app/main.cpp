@@ -1,6 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <thread>
+#include <array>
 #include <map>
 
 #include <cgtb/third-party/glad.h>
@@ -18,8 +19,13 @@
 #include <cgtb/ui/canvas.h>
 #include <cgtb/ui/element.h>
 #include <cgtb/icons.h>
-
 #include <fmt/core.h>
+
+using fmt::format;
+using std::cout;
+using std::endl;
+
+using namespace std::placeholders;
 
 // Since we're not rendering to a texture, but right to the backbuffer
 // we have to handle double-buffering.
@@ -30,22 +36,24 @@
 // In the case of triple-buffering, three separate UI canvas's would be needed.
 
 int swap_buffer_index = 0;
-
-cgtb::ui::canvas *ui = 0;
 cgtb::ui::canvas swap_buffer_canvas[2];
+cgtb::ui::canvas *current_canvas = &swap_buffer_canvas[0];
 
 GLFWcursor *cur_active = 0, *cur_wanted = 0, *cur_normal = 0, *cur_select = 0;
 
-std::map<std::string, std::map<NVGcontext *, int>> nvg_icons;
+std::map<std::string, int> gl_icon_textures;
 
 int make_icon(NVGcontext *context, const std::string_view &name) {
-	auto existing_texture_it = nvg_icons.find(name.data());
-	if (existing_texture_it != nvg_icons.end()) return existing_texture_it->second[context];
+	if (!cur_normal) cur_normal = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+	if (!cur_select) cur_select = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+	auto existing_texture_it = gl_icon_textures.find(name.data());
+	if (existing_texture_it != gl_icon_textures.end()) return existing_texture_it->second;
 	auto image_data_it = cgtb::icons.find(name.data());
 	if (image_data_it == cgtb::icons.end()) return 0;
 	int new_image = nvgCreateImageMem(context, 0, image_data_it->second.first, image_data_it->second.second);
 	if (!new_image) return 0;
-	nvg_icons[name.data()][context] = new_image;
+	gl_icon_textures[name.data()] = new_image;
+	cout << "New icon '" << name << "'; GL texture #" << new_image << endl;
 	return new_image;
 }
 
@@ -53,7 +61,7 @@ void show_error_message(const std::string_view &what) {
 	#if defined(WIN32_LEAN_AND_MEAN) && !defined(__EMSCRIPTEN__)
 	MessageBoxA(NULL, what.data(), "Error", MB_ICONERROR);
 	#else
-	std::cerr << what.data() << std::endl;
+	std::cerr << what.data() << endl;
 	#endif
 }
 
@@ -73,53 +81,30 @@ void glfw_error_callback(int code, const char *what) {
 	show_error_message(ss.str());
 }
 
-class fancy_button : public cgtb::ui::wrapper {
-
-	cgtb::ui::canvas::action poll_cb(const cgtb::ui::element &element) override {
-		return cgtb::ui::canvas::nothing;
-	}
-
-	void render_cb(NVGcontext *nvgc, const cgtb::ui::element &element) override {
-	
-		nvgBeginPath(nvgc);
-		nvgRect(
-			nvgc,
-			element.body.x1, element.body.y1,
-			element.body.x2 - element.body.x1,
-			element.body.y2 - element.body.y1
-		);
-		nvgFillColor(nvgc, nvgRGB(255, 0, 0));
-		nvgFill(nvgc);
-	}
-
-	public:
-
-	fancy_button(const std::string_view &uuid) : wrapper(uuid) {
-
-	}
-};
-
-// auto the_button = std::make_unique<fancy_button>("the_one_to_rull_them_all");
-
 void render(GLFWwindow *window) {
 
 	// Update the canvas pointer to reflect the canvas that's associated
 	// with the current swap buffer.
 
-	ui = &swap_buffer_canvas[swap_buffer_index];
+	current_canvas = &swap_buffer_canvas[swap_buffer_index];
+	current_canvas->begin();
 
-	ui->begin();
-
-	ui->emit(
+	current_canvas->emit(
 		
 		"bg_tile",
-		{ 0, 0, ui->size.x, ui->size.y },
+
+		{
+			0,
+			0,
+			current_canvas->state->size.x,
+			current_canvas->state->size.y
+		},
 		
-		[](const cgtb::ui::element &element) {
+		[](const cgtb::ui::element &element, void *state) {
 			return cgtb::ui::canvas::nothing;
 		},
 
-		[](NVGcontext *nvgc, const cgtb::ui::element &element) {
+		[](NVGcontext *nvgc, const cgtb::ui::element &element, void *state) {
 			nvgBeginPath(nvgc);
 			nvgRect(
 				nvgc,
@@ -132,69 +117,191 @@ void render(GLFWwindow *window) {
 		}
 	);
 
-	for (int i = 0; i < 10; i++) {
+	struct advanced_state {
 
-		ui->emit(
+		bool updated_once = false;
 
-			fmt::format("button#{}", i),
-			{ 20, 20 + (42 * i), 220, 60 + (42 * i) },
+		std::chrono::system_clock::time_point last_update { };
 
-			[](const cgtb::ui::element &element) {
-				if (element.hover) cur_wanted = cur_select;
-				if (!element.previous) return cgtb::ui::canvas::nothing;
-				if ((element.hover || element.previous->hover) && element.cursor != element.previous->cursor) return cgtb::ui::canvas::redraw;
-				return cgtb::ui::canvas::nothing;
-			},
+		std::array<std::vector<std::pair<cgtb::ui::point, float>>, 8> click;
+		std::array<float, 8> click_attack { 1 }, click_decay { 1 };
 
-			[&](NVGcontext *nvgc, const cgtb::ui::element &element) {
-	
-				nvgBeginPath(nvgc);
-				nvgRect(
+		cgtb::ui::point contact;
+
+		float hover = 0, hover_attack = 1, hover_decay = 1;
+
+		std::array<float, 8> punch = { };
+		std::array<float, 8> punch_attack { 1 }, punch_decay { 1 };
+
+		std::array<float, 8> press = { };
+		std::array<float, 8> press_attack { 1 }, press_decay { 1 };
+
+		void update_advanced_state(const cgtb::ui::element &element) {
+
+			float delta = 0.0f;
+
+			auto now = std::chrono::system_clock::now();
+
+			if (updated_once) {
+				auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_update);
+				delta = elapsed.count() * 0.001f;
+			} else {
+				last_update = now;
+				updated_once = true;
+			}
+
+			last_update = now;
+
+			if (element.hover) {
+				hover = std::min(1.0f, hover + (hover_attack * delta));
+				contact = element.cursor;
+			} else hover = std::max(0.0f, hover - (hover_decay * delta));
+
+			for (int i = 0; i < 8; i++) {
+
+				for (auto &button_specific_clicks : click) {
+					for (int c = 0; c < button_specific_clicks.size(); c++) {
+						button_specific_clicks[c].second -= click_decay[i] * delta;
+						if (button_specific_clicks[c].second <= 0) {
+							button_specific_clicks.erase(button_specific_clicks.begin() + c);
+							c--;
+						}
+					}
+				}
+
+				if (element.click[i]) {
+					cout << "CLICK CLICK CLACK" << endl;
+					punch[i] = std::min(1.0f, punch[i] + punch_attack[i]);
+					click[i].push_back({ element.cursor, click_attack[i] });
+				}
+				else punch[i] = std::max(0.0f, punch[i] - (punch_decay[i] * delta));
+
+				if (element.press[i]) press[i] = std::min(1.0f, press[i] + (press_attack[i] * delta));
+				else press[i] = std::max(0.0f, press[i] - (press_decay[i] * delta));
+			}
+		}
+	};
+
+	struct floating_button : advanced_state {
+
+		const std::string uuid;
+
+		cgtb::ui::area body;
+		std::string icon_name;
+
+		floating_button(const std::string_view &uuid) : uuid(uuid) {
+			hover_attack = 12;
+			hover_decay = 12;
+			punch_decay[0] = 5;
+		}
+
+		cgtb::ui::canvas::action poll(const cgtb::ui::element &element, void *state) {
+			auto self = reinterpret_cast<floating_button *>(state);
+			self->update_advanced_state(element);
+			if (element.hover) cur_wanted = cur_select;
+			if (self->click[0].size() || (self->hover != 0 && self->hover != 1) || (element.hover && element.previous && element.cursor != element.previous->cursor)) return cgtb::ui::canvas::redraw_deep;
+			return cgtb::ui::canvas::nothing;
+		}
+
+		void render(NVGcontext *nvgc, const cgtb::ui::element &element, void *state) {
+			
+			auto self = reinterpret_cast<floating_button *>(state);
+
+			nvgBeginPath(nvgc);
+			nvgRoundedRect(
+				nvgc,
+				element.body.x1, element.body.y1,
+				element.body.x2 - element.body.x1,
+				element.body.y2 - element.body.y1,
+				3
+			);
+
+			float brightness = 160 - (48 * self->hover);
+
+			nvgFillColor(nvgc, nvgRGB(brightness, brightness, brightness));
+			nvgFill(nvgc);
+
+			for (auto &click : self->click[0]) {
+
+				float power = (click.second * click.second) / (2.0f * ((click.second * click.second) - click.second) + 1.0f);
+
+				auto click_paint = nvgRadialGradient(
 					nvgc,
-					element.body.x1, element.body.y1,
-					element.body.x2 - element.body.x1,
-					element.body.y2 - element.body.y1
+					element.body.x1 + click.first.x,
+					element.body.y1 + click.first.y,
+					1200 * (1.0f - click.second),
+					1200 * (1.0f - click.second),
+					nvgRGBA(255, 255, 255, 96.0f * power),
+					nvgRGBA(0, 0, 0, 0)
 				);
 
-				nvgFillColor(nvgc, nvgRGB(92, 92, 92));
+				nvgFillPaint(nvgc, click_paint);
 				nvgFill(nvgc);
-
-				if (element.hover) {
-
-					auto paint = nvgRadialGradient(
-						nvgc,
-						element.body.x1 + element.cursor.x,
-						element.body.y1 + element.cursor.y,
-						20,
-						120,
-						nvgRGBA(255, 255, 255, 128),
-						nvgRGBA(255, 255, 255, 0)
-					);
-
-					nvgStrokePaint(nvgc, paint);
-					nvgStrokeWidth(nvgc, 2);
-					nvgStroke(nvgc);
-				}
 			}
-		);
+
+			auto icon = make_icon(nvgc, self->icon_name);
+			auto paint = nvgImagePattern(nvgc, element.body.x1 + 5, element.body.y1 + 5, 24, 24, 0, icon, 1);
+
+			paint.innerColor = nvgRGB(16, 16, 16);
+
+			nvgBeginPath(nvgc);
+			nvgRect(nvgc, element.body.x1 + 5, element.body.y1 + 5, 24, 24);
+			nvgFillPaint(nvgc, paint);
+			nvgFill(nvgc);
+		}
+
+		void emit(cgtb::ui::canvas *canvas) {
+			canvas->emit(
+				uuid,
+				{ body.x1, body.y1, body.x2, body.y2 },
+				std::bind(&floating_button::poll, this, _1, _2),
+				std::bind(&floating_button::render, this, _1, _2, _3),
+				this
+			);
+		}
+	};
+
+	static floating_button buttons[] {
+		{ "the_button" },
+		{ "the_second_button" },
+		{ "the_last_but_not_least_button" }
+	};
+
+	for (int i = 0; i < 3; i++) {
+		switch (i) {
+			case 0: buttons[i].icon_name = "24.material.bug_report"; break;
+			case 1: buttons[i].icon_name = "24.material.developer_board"; break;
+			case 2: buttons[i].icon_name = "24.material.credit_card"; break;
+		}
+		buttons[i].body = { 10, 10 + (38 * i), 210, 10 + 34 + (38 * i) };
+		buttons[i].emit(current_canvas);
 	}
 
-	for (int side_bar_icon_index = 0; side_bar_icon_index < 6; side_bar_icon_index++) {
+	for (int side_bar_icon_index = 0; side_bar_icon_index < 8; side_bar_icon_index++) {
 
-		ui->emit(
+		const int padding = 20;
+		const int icon_size = 48;
 
-			fmt::format("side_icon_{}", side_bar_icon_index),
-			{ ui->size.x - 34, (ui->size.y - 34) - (24 * side_bar_icon_index), ui->size.x - 10, (ui->size.y - 10) - (24 * side_bar_icon_index) },
+		current_canvas->emit(
 
-			[](const cgtb::ui::element &element) {
+			format("side_icon_{}", side_bar_icon_index),
+
+			{
+				current_canvas->state->size.x - (padding + icon_size),
+				(current_canvas->state->size.y - (padding + icon_size)) - (icon_size * side_bar_icon_index),
+				current_canvas->state->size.x - padding,
+				(current_canvas->state->size.y - padding) - (icon_size * side_bar_icon_index)
+			},
+
+			[](const cgtb::ui::element &element, void *state) {
 				if (element.hover) cur_wanted = cur_select;
 				if (!element.previous) return cgtb::ui::canvas::nothing;
 				if (static_cast<bool>(element.hover) != static_cast<bool>(element.previous->hover)) return cgtb::ui::canvas::redraw_deep;
 				return cgtb::ui::canvas::nothing;
 			},
 
-			[](NVGcontext *nvgc, const cgtb::ui::element &element) {
-			
+			[icon_size](NVGcontext *nvgc, const cgtb::ui::element &element, void *state) {
+
 				nvgBeginPath(nvgc);
 
 				nvgRect(
@@ -204,8 +311,8 @@ void render(GLFWwindow *window) {
 					element.body.y2 - element.body.y1
 				);
 
-				int icon = make_icon(nvgc, element.hover ? "24.material.sentiment_very_satisfied" : "24.material.sentiment_very_dissatisfied");
-				auto paint = nvgImagePattern(nvgc, element.body.x1, element.body.y1, 24, 24, 0, icon, 1);
+				int icon = make_icon(nvgc, element.hover ? format("{}.material.sentiment_very_satisfied", icon_size) : format("{}.material.sentiment_very_dissatisfied", icon_size));
+				auto paint = nvgImagePattern(nvgc, element.body.x1, element.body.y1, icon_size, icon_size, 0, icon, 1);
 
 				paint.innerColor = element.hover ? nvgRGBA(128, 255, 128, 255) : nvgRGBA(255, 128, 128, 128);
 
@@ -216,16 +323,22 @@ void render(GLFWwindow *window) {
 		);
 	}
 
-	ui->emit(
+	current_canvas->emit(
 
 		"big_icon",
-		{ 10, ui->size.y - 58, 58, ui->size.y - 10 },
 
-		[](const cgtb::ui::element &element) {
+		{
+			10,
+			current_canvas->state->size.y - 58,
+			58,
+			current_canvas->state->size.y - 10
+		},
+
+		[](const cgtb::ui::element &element, void *) {
 			return cgtb::ui::canvas::nothing;
 		},
 
-		[](NVGcontext *nvgc, const cgtb::ui::element &element) {
+		[](NVGcontext *nvgc, const cgtb::ui::element &element, void *) {
 		
 			nvgBeginPath(nvgc);
 
@@ -250,11 +363,10 @@ void render(GLFWwindow *window) {
 	// was updated and the backbuffer needs to be swapped. Once
 	// the buffers are swapped, also move to the associated canvas.
 
-	if (ui->end()) {
-		std::cout << "buffer swap @ " << std::chrono::system_clock::now().time_since_epoch().count() << std::endl;
+	if (current_canvas->end()) {
+		// cout << "buffer swap @ " << std::chrono::system_clock::now().time_since_epoch().count() << endl;
 		glfwSwapBuffers(window);
 		swap_buffer_index = !swap_buffer_index;
-		// emit_render_indicator = true;
 	}
 }
 
@@ -278,7 +390,7 @@ void run_window_loop(GLFWwindow *window, NVGcontext *nvgc) {
 
 	// Notify all canvas's of the initial size of the buffers.
 
-	for (auto &canvas : swap_buffer_canvas) glfwGetWindowSize(window, &canvas.size.x, &canvas.size.y);
+	for (auto &canvas : swap_buffer_canvas) glfwGetWindowSize(window, &current_canvas->state->size.x, &current_canvas->state->size.y);
 
 	while (!glfwWindowShouldClose(window)) {
 
@@ -301,18 +413,24 @@ void window_refresh_callback(GLFWwindow *window) {
 }
 
 void window_size_callback(GLFWwindow *window, int width, int height) {
-	for (auto &canvas : swap_buffer_canvas) {
-		canvas.size = { width, height };
-		canvas.clear = true;
-	}
+	current_canvas->state->size = { width, height };
+	for (auto &canvas : swap_buffer_canvas) canvas.clear = true;
 }
 
 void cursor_location_callback(GLFWwindow *window, double x, double y) {
-	for (auto &canvas : swap_buffer_canvas) canvas.cursor = { x, y };
+	current_canvas->state->cursor = { static_cast<int>(x), static_cast<int>(y) };
 }
 
 void cursor_enter_callback(GLFWwindow *window, int entered) {
-	for (auto &canvas : swap_buffer_canvas) canvas.cursor_enabled = entered > 0;
+	current_canvas->state->cursor_enabled = entered;
+}
+
+void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
+	current_canvas->state->mouse_buttons[button] = action;
+}
+
+void char_callback(GLFWwindow *window, unsigned int unicode) {
+
 }
 
 int main(int c, char **v) {
@@ -320,15 +438,13 @@ int main(int c, char **v) {
 	glfwSetErrorCallback(glfw_error_callback);
 	exit_with_error_if(glfwInit() == GLFW_FALSE, "There was a problem initializing the GLFW library.", 1);
 	auto window = glfwCreateWindow(800, 600, "GLFW", 0, 0);
-
-	cur_normal = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
-	cur_select = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
-
 	exit_with_error_if(window == nullptr, "There was a problem creating an OpenGL context.", 2);
 	glfwSetWindowRefreshCallback(window, window_refresh_callback);
 	glfwSetWindowSizeCallback(window, window_size_callback);
 	glfwSetCursorPosCallback(window, cursor_location_callback);
 	glfwSetCursorEnterCallback(window, cursor_enter_callback);
+	glfwSetMouseButtonCallback(window, mouse_button_callback);
+	glfwSetCharCallback(window, char_callback);
 	glfwMakeContextCurrent(window);
 	exit_with_error_if(!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)), "There was a problem determining which OpenGL extensions are present on this system.", 3);
 	auto nvgc = nvgCreateGL2(NVG_ANTIALIAS);
@@ -337,7 +453,9 @@ int main(int c, char **v) {
 	// Tell each canvas where to find the NanoVG context. It's fine
 	// for all canvas's to utilize the same context.
 
-	for (auto &canvas : swap_buffer_canvas) canvas.nvgc = nvgc;
+	swap_buffer_canvas[0].state = std::make_shared<cgtb::ui::canvas::shared_state>();
+	swap_buffer_canvas[0].state->nvgc = nvgc;
+	swap_buffer_canvas[1].state = swap_buffer_canvas[0].state;
 
 	run_window_loop(window, nvgc);
 

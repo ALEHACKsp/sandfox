@@ -22,7 +22,7 @@ bool cgtb::ui::canvas::end() {
 	// The return-value of this function.
 	bool need_swap = false;
 
-	glViewport(0, 0, size.x, size.y);
+	glViewport(0, 0, state->size.x, state->size.y);
 
 	if (clear) {
 		glClearColor(0, 0, 0, 1);
@@ -30,18 +30,28 @@ bool cgtb::ui::canvas::end() {
 		need_swap = true;
 	}
 
+	static int num = 0;
+
+	if (state->mouse_buttons[0] && !state->mouse_buttons_previous[0]) std::cout << "SINGLE CLICK" << std::endl;
+
 	// For all elements, update their states and then call their poll().
 	for (int layer = 0; layer < proposed.size(); layer++) {
 		for (auto &E : proposed[layer]) {
-			E.second.hover = cursor_enabled && E.second.body.contains(cursor);
-			if (cursor_enabled) E.second.cursor = { cursor.x - E.second.body.x1, cursor.y - E.second.body.y1 };
-			auto response = E.second.poll(E.second);
+			if (state->cursor_enabled) E.second.cursor = { state->cursor.x - E.second.body.x1, state->cursor.y - E.second.body.y1 };
+			E.second.hover = state->cursor_enabled && E.second.body.contains(state->cursor);
+			for (int i = 0; i < 8; i++) {
+				E.second.click[i] = E.second.hover && state->mouse_buttons[i] && !state->mouse_buttons_previous[i];
+				E.second.press[i] = E.second.hover && state->mouse_buttons[i] && state->mouse_buttons_previous[i];
+			}
+			auto response = E.second.poll(E.second, E.second.state);
 			if (response == action::redraw) dirty.push_back({ layer, E.second.body });
 			else if (response == action::redraw_deep) dirty.push_back({ 0, E.second.body });
 		}
 	}
 
-	nvgBeginFrame(nvgc, size.x, size.y, 1);
+	num++;
+
+	nvgBeginFrame(state->nvgc, state->size.x, state->size.y, 1);
 
 	// TODO: 'dirty' areas that intersect with eachother could cause render artifacts. Specifically, problems with alpha-enabled elemements.
 
@@ -49,37 +59,40 @@ bool cgtb::ui::canvas::end() {
 
 	for (auto &dirty_area : dirty) {
 
-		std::cout << "dirty screen area: " << dirty_area.second.x1 << ", " << dirty_area.second.y1
-			<< " -> " << dirty_area.second.x2 << ", " << dirty_area.second.y2 << " ("
-			<< ((dirty_area.second.x2 - dirty_area.second.x1) * (dirty_area.second.y2 - dirty_area.second.y1)) << " pixels) -- layers " << dirty_area.first << " to " << proposed.size() << std::endl;
+		//std::cout << "dirty screen area: " << dirty_area.second.x1 << ", " << dirty_area.second.y1
+		//	<< " -> " << dirty_area.second.x2 << ", " << dirty_area.second.y2 << " ("
+		//	<< ((dirty_area.second.x2 - dirty_area.second.x1) * (dirty_area.second.y2 - dirty_area.second.y1)) << " pixels) -- layers " << dirty_area.first << " to " << proposed.size() << std::endl;
 
 		// Clip all pixels that are outside of the current dirty area.
-		nvgScissor(nvgc, dirty_area.second.x1, dirty_area.second.y1, dirty_area.second.x2 - dirty_area.second.x1, dirty_area.second.y2 - dirty_area.second.y1);
-				
+		nvgScissor(state->nvgc, dirty_area.second.x1, dirty_area.second.y1, dirty_area.second.x2 - dirty_area.second.x1, dirty_area.second.y2 - dirty_area.second.y1);
+	
 		// Start at the layer indicated and move upwards.
 		// Re-drawing every elements that's within the intended area.
 		for (int layer = dirty_area.first; layer < proposed.size(); layer++) {
 			for (auto &E : proposed[layer]) {
 				if (!E.second.body.intersecting(dirty_area.second)) continue;
-				nvgSave(nvgc);
-				std::clog << " render '" << E.first << "'" << std::endl;
-				E.second.render(nvgc, E.second);
-				nvgRestore(nvgc);
+				nvgSave(state->nvgc);
+				std::clog << " render '" << E.first << "' -- " << E.second.body.x1 << ", " << E.second.body.y1 << " -> " << E.second.body.x2 << ", " << E.second.body.y2 << std::endl;
+				E.second.render(state->nvgc, E.second, E.second.state);
+				nvgRestore(state->nvgc);
 				need_swap = true;
 			}
 		}
 
 		// Disable clipping.
-		nvgResetScissor(nvgc);
+		nvgResetScissor(state->nvgc);
 	}
 
-	nvgEndFrame(nvgc);
+	nvgEndFrame(state->nvgc);
 
 	// All dirty areas have been taken care of; so clear it.
 	dirty.clear();
 
 	// Copy all of the elements so we can reference them next frame.
 	finalized = proposed;
+
+	// Remember the mouse button states so we can detect clicks.
+	state->mouse_buttons_previous = state->mouse_buttons;
 
 	// The target has already been cleared so don't do it again.
 	clear = false;
@@ -88,14 +101,9 @@ bool cgtb::ui::canvas::end() {
 	return need_swap;
 }
 
+int cgtb::ui::canvas::emit(const std::string_view &uuid, const area &body, std::function<action(const element &, void *)> poll, std::function<void(NVGcontext *, const element &, void *)> render, void *state) {
 
-int cgtb::ui::canvas::emit(const std::string_view &uuid, const area &body, std::function<action(const element &)> poll, std::function<void(NVGcontext *, const element &)> render) {
-			
 	element tmp;
-
-	tmp.body = body;
-	tmp.poll = poll;
-	tmp.render = render;
 
 	// Used to keep track of whether an element existed previously, or is new.
 	// And if it has transferred layers or not.
@@ -107,6 +115,14 @@ int cgtb::ui::canvas::emit(const std::string_view &uuid, const area &body, std::
 		prev_layer = layer;
 		break;
 	}
+
+	// Pull element state from the last frame.
+	if (prev_layer >= 0) tmp = finalized[prev_layer][uuid.data()];
+
+	tmp.body = body;
+	tmp.poll = poll;
+	tmp.render = render;
+	tmp.state = state;
 
 	// Iterate through all the layers and find the earliest where there's space to fit this one.
 	for (int layer = 0; layer < proposed.size(); layer++) {

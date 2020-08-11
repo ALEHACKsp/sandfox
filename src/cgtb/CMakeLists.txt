@@ -13,7 +13,6 @@ add_library(
 
 	cgtb/ui.cpp
 	cgtb/ui/canvas.cpp
-	cgtb/ui/wrapper.cpp
 	cgtb/icons.cpp
 	cgtb/third-party/nanovg.c
 	cgtb/third-party/glad.c
