@@ -1,20 +1,18 @@
-#include <cstdlib>
 #include <iostream>
 #include <sstream>
 #include <thread>
 #include <map>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 
+#include <cgtb/third-party/glad.h>
 #define NANOVG_GL2_IMPLEMENTATION
 #include <cgtb/third-party/nanovg.h>
 #include <cgtb/third-party/nanovg_gl.h>
 #include <cgtb/third-party/stb_image.h>
+#include <cgtb/third-party/glfw/include/GLFW/glfw3.h>
 
 #if defined(_WIN32) || defined(WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-
 #endif
 
 #include <cgtb/ui/canvas.h>
@@ -333,8 +331,7 @@ int main(int c, char **v) {
 	glfwSetCursorPosCallback(window, cursor_location_callback);
 	glfwSetCursorEnterCallback(window, cursor_enter_callback);
 	glfwMakeContextCurrent(window);
-	glewExperimental = GL_TRUE;
-	exit_with_error_if(glewInit() != 0, "There was a problem determining which OpenGL extensions are present on this system.", 3);
+	exit_with_error_if(!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)), "There was a problem determining which OpenGL extensions are present on this system.", 3);
 	auto nvgc = nvgCreateGL2(NVG_ANTIALIAS);
 	exit_with_error_if(nvgc == nullptr, "There was a problem initializing the NanoVG library.", 4);
 

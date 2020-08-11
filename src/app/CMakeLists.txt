@@ -21,17 +21,7 @@ add_executable(
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 
-	message("")
-	message("Detected Windows. Expecting MSYS2/GCC.")
-	message("Required packages: mingw-w64-x86_64-glfw mingw-w64-x86_64-glew mingw-w64-x86_64-fmt")
-	message("In case of link errors. Not that those must be available.")
-	message("")
-
-	# glfw3 - https://packages.msys2.org/package/mingw-w64-x86_64-glfw
-	# glew32 - https://packages.msys2.org/package/mingw-w64-x86_64-glew
-	# fmt - https://packages.msys2.org/package/mingw-w64-x86_64-fmt
-
-	target_link_libraries(${PROJECT_NAME} -lglfw3 -lglew32 -lopengl32 -lfmt)
+	target_link_libraries(${PROJECT_NAME} -lopengl32)
 	# set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY LINK_FLAGS "-mwindows") # use WinMain, console window will no be created
 
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
@@ -44,17 +34,7 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 
 	if(${LSB_RELEASE_ID_SHORT} STREQUAL "Ubuntu")
 
-		message("")
-		message("Detected Ubuntu.")
-		message("Required packages: libglfw3-dev libglew-dev libfmt-dev")
-		message("In case of link errors. Not that those must be available.")
-		message("")
-
-		# glfw - https://packages.ubuntu.com/focal/libglfw3-dev
-		# GLEW - https://packages.ubuntu.com/focal/libglew-dev
-		# fmt - https://packages.ubuntu.com/focal/libfmt-dev
-
-		target_link_libraries(${PROJECT_NAME} -lglfw -lGLEW -lGL -lfmt)
+		target_link_libraries(${PROJECT_NAME} -lGL)
 
 	endif()
 endif()
