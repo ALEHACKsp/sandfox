@@ -17,7 +17,6 @@
 
 #include <cgtb/ui/canvas.h>
 #include <cgtb/ui/element.h>
-#include <cgtb/ui/wrapper.h>
 #include <cgtb/icons.h>
 
 #include <fmt/core.h>
