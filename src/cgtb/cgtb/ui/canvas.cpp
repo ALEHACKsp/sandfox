@@ -1,8 +1,8 @@
 #include "canvas.h"
 
-#include <GL/glew.h>
 #include <iostream>
 
+#include "../third-party/glad.h"
 #include "../third-party/nanovg.h"
 
 #include "element.h"
