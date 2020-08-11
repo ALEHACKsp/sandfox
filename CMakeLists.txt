@@ -7,7 +7,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
+include_directories(src/fmt/include)
 include_directories(src/cgtb)
+
+add_subdirectory(src/fmt)
 add_subdirectory(src/cgtb)
+
+link_libraries(fmt)
 link_libraries(cgtb)
+
 add_subdirectory(src/app)

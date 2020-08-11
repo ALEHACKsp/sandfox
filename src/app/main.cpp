@@ -3,7 +3,6 @@
 #include <sstream>
 #include <thread>
 #include <map>
-#include <fmt/core.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -22,6 +21,8 @@
 #include <cgtb/ui/element.h>
 #include <cgtb/ui/wrapper.h>
 #include <cgtb/icons.h>
+
+#include <fmt/core.h>
 
 // Since we're not rendering to a texture, but right to the backbuffer
 // we have to handle double-buffering.
