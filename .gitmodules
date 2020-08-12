@@ -7,3 +7,6 @@
 [submodule "src/glfw"]
 	path = src/glfw
 	url = https://github.com/glfw/glfw.git
+[submodule "src/app/emico"]
+	path = src/app/emico
+	url = https://github.com/codegoose/emico
