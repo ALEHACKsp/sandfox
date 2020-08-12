@@ -1,9 +1,6 @@
 [submodule "src/fmt"]
 	path = src/fmt
 	url = https://github.com/fmtlib/fmt
-[submodule "src/cgtb/cgtb/third-party/glfw"]
-	path = src/cgtb/cgtb/third-party/glfw
-	url = https://github.com/glfw/glfw
 [submodule "src/synapse/synapse"]
 	path = src/synapse/synapse
 	url = https://github.com/zajo/synapse.git
