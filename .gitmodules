@@ -4,3 +4,6 @@
 [submodule "src/synapse/synapse"]
 	path = src/synapse/synapse
 	url = https://github.com/zajo/synapse.git
+[submodule "src/glfw"]
+	path = src/glfw
+	url = https://github.com/glfw/glfw.git
