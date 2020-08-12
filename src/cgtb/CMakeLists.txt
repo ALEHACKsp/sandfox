@@ -3,7 +3,7 @@ project(cgtb)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_subdirectory(cgtb/third-party/glfw)
+message("${CMAKE_CURRENT_SOURCE_DIR}")
 
 add_library(
 
@@ -11,11 +11,8 @@ add_library(
 
 	STATIC
 
-	cgtb/ui.cpp
-	cgtb/ui/canvas.cpp
-	cgtb/icons.cpp
-	cgtb/third-party/nanovg.c
-	cgtb/third-party/glad.c
+	src/ui.cpp
+	src/ui/canvas.cpp
+	src/third-party/nanovg.c
+	src/third-party/glad.c
 )
-
-target_link_libraries(cgtb glfw)

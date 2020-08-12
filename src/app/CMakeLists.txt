@@ -13,6 +13,8 @@ generate_product_version(
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_subdirectory(emico)
+
 add_executable(
 	${PROJECT_NAME}
 	${VERSION_INFORMATION}
@@ -38,3 +40,5 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 
 	endif()
 endif()
+
+target_link_libraries(${PROJECT_NAME} emico)

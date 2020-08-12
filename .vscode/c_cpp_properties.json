@@ -3,7 +3,11 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/src/app",
+                "${workspaceFolder}/src/cgtb/include",
+                "${workspaceFolder}/src/app/emico/include",
+                "${workspaceFolder}/src/fmt/include",
+                "${workspaceFolder}/src/synapse/synapse/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
