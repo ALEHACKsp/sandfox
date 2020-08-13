@@ -6,6 +6,7 @@
                 "${workspaceFolder}/src/app",
                 "${workspaceFolder}/src/cgtb/include",
                 "${workspaceFolder}/src/app/emico/include",
+                "${workspaceFolder}/src/glfw/include",
                 "${workspaceFolder}/src/fmt/include",
                 "${workspaceFolder}/src/synapse/synapse/include"
             ],
