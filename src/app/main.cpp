@@ -9,7 +9,7 @@
 #include <cgtb/third-party/nanovg.h>
 #include <cgtb/third-party/nanovg_gl.h>
 #include <cgtb/third-party/stb_image.h>
-#include <cgtb/third-party/glfw/include/GLFW/glfw3.h>
+#include <GLFW/glfw3.h>
 
 #if defined(_WIN32) || defined(WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -18,7 +18,6 @@
 
 #include <cgtb/ui/canvas.h>
 #include <cgtb/ui/element.h>
-#include <cgtb/icons.h>
 
 #include <fmt/core.h>
 
@@ -26,6 +25,7 @@
 #include <boost/synapse/connection.hpp>
 
 #include "glfw_synapse.h"
+#include "emico/include/emico.h"
 
 //
 
@@ -56,10 +56,18 @@ int make_icon(NVGcontext *context, const std::string_view &name) {
 	if (!cur_select) cur_select = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
 	auto existing_texture_it = gl_icon_textures.find(name.data());
 	if (existing_texture_it != gl_icon_textures.end()) return existing_texture_it->second;
-	auto image_data_it = cgtb::icons.find(name.data());
-	if (image_data_it == cgtb::icons.end()) return 0;
-	int new_image = nvgCreateImageMem(context, 0, image_data_it->second.first, image_data_it->second.second);
-	if (!new_image) return 0;
+	auto full_name = format("icons.{}", name);
+	auto entry = emico::assets.find(full_name);
+	if (entry == emico::assets.end()) {
+		cout << "Icon not found: " << full_name << endl;
+		return 0;
+	}
+	cout << "Found icon '" << full_name << "'. (" << entry->second.second << " bytes) @ " << entry->second.first << endl;
+	int new_image = nvgCreateImageMem(context, 0, reinterpret_cast<const unsigned char *>(entry->second.first), entry->second.second);
+	if (!new_image) {
+		cout << "Bad data." << endl;
+		return 0;
+	}
 	gl_icon_textures[name.data()] = new_image;
 	cout << "New icon '" << name << "'; GL texture #" << new_image << endl;
 	return new_image;
@@ -274,9 +282,9 @@ void render(GLFWwindow *window) {
 
 	for (int i = 0; i < 3; i++) {
 		switch (i) {
-			case 0: buttons[i].icon_name = "24.material.bug_report"; break;
-			case 1: buttons[i].icon_name = "24.material.developer_board"; break;
-			case 2: buttons[i].icon_name = "24.material.credit_card"; break;
+			case 0: buttons[i].icon_name = "bug_report_24"; break;
+			case 1: buttons[i].icon_name = "developer_board_24"; break;
+			case 2: buttons[i].icon_name = "credit_card_24"; break;
 		}
 		buttons[i].body = { 10, 10 + (38 * i), 44, 10 + 34 + (38 * i) };
 		buttons[i].emit(current_canvas);
@@ -361,7 +369,7 @@ void render(GLFWwindow *window) {
 			nvgStrokeColor(nvgc, nvgRGBA(0, 0, 0, 128));
 			nvgStroke(nvgc);
 
-			auto icon = make_icon(nvgc, "48.material.play_for_work");
+			auto icon = make_icon(nvgc, "play_for_work_48");
 
 			auto paint = nvgImagePattern(
 				nvgc,
@@ -503,8 +511,8 @@ int main(int c, char **v) {
 
 	glfwSetErrorCallback(glfw_error_callback);
 	exit_with_error_if(glfwInit() == GLFW_FALSE, "There was a problem initializing the GLFW library.", 1);
-	glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-	glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
+	// glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+	// glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
 	auto window = glfwCreateWindow(800, 600, "GLFW", 0, 0);
 	exit_with_error_if(window == nullptr, "There was a problem creating an OpenGL context.", 2);
 	glfwSetWindowRefreshCallback(window, window_refresh_callback);
