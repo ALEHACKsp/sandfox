@@ -8,7 +8,8 @@
                 "${workspaceFolder}/src/app/emico/include",
                 "${workspaceFolder}/src/glfw/include",
                 "${workspaceFolder}/src/fmt/include",
-                "${workspaceFolder}/src/synapse/synapse/include"
+                "${workspaceFolder}/src/synapse/synapse/include",
+                "${workspaceFolder}/src/freetype/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

@@ -23,6 +23,7 @@
 
 #include <cgtb/third-party/nanovg.h>
 #define FONTSTASH_IMPLEMENTATION
+#define FONS_USE_FREETYPE
 #include <cgtb/third-party/fontstash.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <cgtb/third-party/stb_image.h>

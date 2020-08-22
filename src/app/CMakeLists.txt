@@ -41,4 +41,4 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	endif()
 endif()
 
-target_link_libraries(${PROJECT_NAME} emico)
+target_link_libraries(${PROJECT_NAME} emico freetype)
