@@ -28,16 +28,29 @@ bool cgtb::ui::canvas::end() {
 		need_swap = true;
 	}
 
+	// Clean up any areas of the screen that had elements last frame but were not proposed this frame. a.k.a Don't exist anymore.
+
+	for (auto &absent_element : absent) dirty.push_back({ 0, absent_element.second.second.body });
+
+	absent.clear();
+
 	// For all elements, update their states and then call their poll().
+
 	for (int layer = 0; layer < proposed.size(); layer++) {
+
 		for (auto &E : proposed[layer]) {
+
 			if (state->cursor_enabled) E.second.cursor = { state->cursor.x - E.second.body.x1, state->cursor.y - E.second.body.y1 };
+
 			E.second.hover = state->cursor_enabled && E.second.body.contains(state->cursor);
+
 			for (int i = 0; i < 8; i++) {
 				E.second.click[i] = E.second.hover && state->mouse_buttons[i] && !state->mouse_buttons_previous[i];
 				E.second.press[i] = E.second.hover && state->mouse_buttons[i] && state->mouse_buttons_previous[i];
 			}
+
 			auto response = E.second.poll(E.second, E.second.state);
+
 			if (response == action::redraw) dirty.push_back({ layer, E.second.body });
 			else if (response == action::redraw_deep) dirty.push_back({ 0, E.second.body });
 		}
@@ -45,15 +58,17 @@ bool cgtb::ui::canvas::end() {
 
 	nvgBeginFrame(state->nvgc, state->size.x, state->size.y, 1);
 
-	// TODO: 'dirty' areas that intersect with eachother could cause render artifacts. Specifically, problems with alpha-enabled elemements.
+	#warning(Dirty areas that intersect with one another could cause render artifacts with alpha-enabled elements.)
 
 	// Iterate all dirty sections of the screen and re-draw all elements involved with that area.
 
 	for (auto &dirty_area : dirty) {
 
-		//std::cout << "dirty screen area: " << dirty_area.second.x1 << ", " << dirty_area.second.y1
-		//	<< " -> " << dirty_area.second.x2 << ", " << dirty_area.second.y2 << " ("
-		//	<< ((dirty_area.second.x2 - dirty_area.second.x1) * (dirty_area.second.y2 - dirty_area.second.y1)) << " pixels) -- layers " << dirty_area.first << " to " << proposed.size() << std::endl;
+		/*
+		std::cout << "dirty screen area: " << dirty_area.second.x1 << ", " << dirty_area.second.y1
+			<< " -> " << dirty_area.second.x2 << ", " << dirty_area.second.y2 << " ("
+			<< ((dirty_area.second.x2 - dirty_area.second.x1) * (dirty_area.second.y2 - dirty_area.second.y1)) << " pixels) -- layers " << dirty_area.first << " to " << proposed.size() << std::endl;
+		*/
 
 		// Clip all pixels that are outside of the current dirty area.
 		nvgScissor(state->nvgc, dirty_area.second.x1, dirty_area.second.y1, dirty_area.second.x2 - dirty_area.second.x1, dirty_area.second.y2 - dirty_area.second.y1);
@@ -83,6 +98,11 @@ bool cgtb::ui::canvas::end() {
 	// Copy all of the elements so we can reference them next frame.
 	finalized = proposed;
 
+	// Populate the absent elements list so we can to see if anything didn't show up next frame.
+	for (int finalized_layer_index = 0; finalized_layer_index < finalized.size(); finalized_layer_index++)
+		for (auto &finalized_element : finalized[finalized_layer_index])
+			absent[finalized_element.first] = { finalized_layer_index, finalized_element.second };
+
 	// Remember the mouse button states so we can detect clicks.
 	state->mouse_buttons_previous = state->mouse_buttons;
 
@@ -94,6 +114,8 @@ bool cgtb::ui::canvas::end() {
 }
 
 int cgtb::ui::canvas::emit(const std::string_view &uuid, const area &body, std::function<action(const element &, void *)> poll, std::function<void(NVGcontext *, const element &, void *)> render, void *state) {
+
+	absent.erase(uuid.data());
 
 	element tmp;
 

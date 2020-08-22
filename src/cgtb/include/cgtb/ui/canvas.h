@@ -59,6 +59,8 @@ namespace cgtb::ui {
 		// The vector is to sort them by layer and the map by UUID.
 		std::vector<std::map<std::string, element>> proposed, finalized;
 
+		std::map<std::string, std::pair<int, element>> absent;
+
 		// Used to keep track of what areas of the render target need to be re-drawn.
 		// Each pair holds an integer marking the intended layer.
 		// All layers above the intended layer are also considered dirty.
