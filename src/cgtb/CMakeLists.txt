@@ -13,6 +13,7 @@ add_library(
 
 	src/ui.cpp
 	src/ui/canvas.cpp
+	src/ui/reactor.cpp
 	src/third-party/nanovg.c
 	src/third-party/glad.c
 )
