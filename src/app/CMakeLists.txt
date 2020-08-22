@@ -19,6 +19,7 @@ add_executable(
 	${PROJECT_NAME}
 	${VERSION_INFORMATION}
 	main.cpp
+	implementations.cpp
 )
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
