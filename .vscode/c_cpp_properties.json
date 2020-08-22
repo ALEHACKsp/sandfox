@@ -12,7 +12,6 @@
                 "${workspaceFolder}/src/freetype/include"
             ],
             "defines": [],
-            "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "gcc-x64"
