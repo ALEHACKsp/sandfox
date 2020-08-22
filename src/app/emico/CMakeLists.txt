@@ -17,6 +17,8 @@ add_library(
 	src/font/roboto_bold.ttf.cpp
 	src/font/roboto_medium_italic.ttf.cpp
 	src/font/roboto_black_italic.ttf.cpp
+	src/license/tabler.cpp
+	src/license/roboto.cpp
 	src/icon/chart_line.png.cpp
 	src/icon/ball_tennis.png.cpp
 	src/icon/info_square.png.cpp
