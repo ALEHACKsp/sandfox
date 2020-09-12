@@ -1,0 +1,10 @@
+{
+	"python.linting.pylintEnabled": true,
+	"python.linting.enabled": true,
+	"C_Cpp.autoAddFileAssociations": false,
+	"C_Cpp.default.cppStandard": "c++20",
+	"editor.insertSpaces": false,
+	"C_Cpp.default.intelliSenseMode": "clang-x64",
+	"C_Cpp.vcpkg.enabled": false,
+	"editor.detectIndentation": false,
+}

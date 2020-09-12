@@ -1,21 +1,21 @@
 {
-    "configurations": [
-        {
-            "name": "Linux",
-            "includePath": [
-                "${workspaceFolder}/src/app",
-                "${workspaceFolder}/src/cgtb/include",
-                "${workspaceFolder}/src/app/emico/include",
-                "${workspaceFolder}/src/glfw/include",
-                "${workspaceFolder}/src/fmt/include",
-                "${workspaceFolder}/src/synapse/synapse/include",
-                "${workspaceFolder}/src/freetype/include"
-            ],
-            "defines": [],
-            "cStandard": "c11",
-            "cppStandard": "c++17",
-            "intelliSenseMode": "gcc-x64"
-        }
-    ],
-    "version": 4
+	"configurations": [
+		{
+			"name": "Default",
+			"includePath": [
+				"${workspaceFolder}/sandfox/include",
+				"${workspaceFolder}/sandfox/extern/include",
+				"${workspaceFolder}/sandfox/extern/src/glfw/include",
+				"${workspaceFolder}/sandfox/extern/src/assimp/include",
+				"${workspaceFolder}/sandfox/extern/src/freetype/include",
+				"${workspaceFolder}/sandfox/extern/src/nng/include",
+				"${workspaceFolder}/sandfox/extern/src/spdlog/include",
+				"${workspaceFolder}/sandfox/extern/src/uv/include",
+				"${workspaceFolder}/sandfox/extern/src/synapse/include",
+				"${default}"
+			],
+			"defines": []
+		}
+	],
+	"version": 4
 }
