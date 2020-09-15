@@ -5,7 +5,13 @@
 #include <spdlog/spdlog.h>
 #include <sandfox/ui.h>
 
+struct GLFWwindow;
+struct NVGcontext;
+
 namespace sandfox::core {
+
+	extern GLFWwindow *window;
+	extern NVGcontext *nvg;
 
 	extern std::shared_ptr<spdlog::logger> logger;
 	extern std::function<bool(void)> on_init;
