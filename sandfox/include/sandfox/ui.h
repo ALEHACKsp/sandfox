@@ -68,6 +68,6 @@ namespace sandfox::ui {
 		void begin();
 		bool end();
 
-		int emit(const std::string_view &uuid, const glm::vec2 &ul, const glm::vec2 &lr, std::function<render_action(element *)> poll, std::function<void(NVGcontext *, element *)> render);
+		int emit(const std::string_view &uuid, const glm::vec2 &ul, const glm::vec2 &lr, std::function<render_action(element *)> poll, std::function<void(NVGcontext *, element *)> render, std::any data = { });
 	};
 }
