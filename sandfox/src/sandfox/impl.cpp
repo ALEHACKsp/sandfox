@@ -1,7 +1,5 @@
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb_image_resize.h"
-#define ENET_IMPLEMENTATION
-#include <enet.h>
 #include <glad.h>
 #include <nanovg.h>
 #define NANOVG_GLES2_IMPLEMENTATION
