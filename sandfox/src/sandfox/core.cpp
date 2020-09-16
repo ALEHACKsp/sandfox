@@ -93,6 +93,7 @@ bool sandfox::core::init() {
 }
 
 bool sandfox::core::update() {
+	uv_run(uv_default_loop(), UV_RUN_NOWAIT);
 	auto video_mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 	glfwWaitEventsTimeout(video_mode ? 1.0 / video_mode->refreshRate : 1.0 / 30.0);
 	return (core::on_update ? core::on_update() : true) && (core::window && !glfwWindowShouldClose(core::window));
