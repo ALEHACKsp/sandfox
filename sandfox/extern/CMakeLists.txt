@@ -26,6 +26,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/in
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 option(BUILD_SHARED_LIBS OFF)
+option(WITH_APPS OFF)
 
 # UV
 
