@@ -23,7 +23,7 @@ void sf_impl_nvg_destroy(NVGcontext *);
 
 bool sandfox::core::init() {
 	if (!core::logger) {
-		core::logger = spdlog::stdout_color_mt("Core");
+		core::logger = spdlog::stdout_color_mt("sandfox");
 		core::logger->set_level(spdlog::level::debug);
 	}
 	glfwSetErrorCallback([](int code, const char *what) { core::logger->error(what); });
