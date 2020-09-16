@@ -69,6 +69,11 @@ else()
 	message("-- Skipping building GLFW because web build has been indicated.")
 endif()
 
+# LUNASVG
+
+add_subdirectory(src/lunasvg)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/lunasvg/include)
+
 # NNG
 
 if(NOT EMSCRIPTEN)
@@ -83,7 +88,7 @@ endif()
 # PLATFORM SPECIFICS
 
 if(EMSCRIPTEN)
-	target_link_libraries(${PROJECT_NAME} freetype assimp spdlog uv_a)
+	target_link_libraries(${PROJECT_NAME} freetype assimp spdlog uv_a lunasvg)
 	# set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY LINK_FLAGS "-s USE_GLFW=3 -s USE_WEBGL2=1 --shell-file shell_raylib.html")
 	# set(CMAKE_EXECUTABLE_SUFFIX ".html")
 else()
@@ -101,5 +106,5 @@ else()
 			target_link_libraries(${PROJECT_NAME} -lGL)
 		endif()
 	endif()
-	target_link_libraries(${PROJECT_NAME} glfw freetype assimp nng spdlog uv_a)
+	target_link_libraries(${PROJECT_NAME} glfw freetype assimp nng spdlog uv_a lunasvg)
 endif()

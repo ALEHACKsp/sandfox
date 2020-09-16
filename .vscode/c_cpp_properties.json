@@ -12,6 +12,7 @@
 				"${workspaceFolder}/sandfox/extern/src/spdlog/include",
 				"${workspaceFolder}/sandfox/extern/src/uv/include",
 				"${workspaceFolder}/sandfox/extern/src/synapse/include",
+				"${workspaceFolder}/sandfox/extern/src/lunasvg/include",
 				"${default}"
 			],
 			"defines": []
