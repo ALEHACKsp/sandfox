@@ -94,7 +94,7 @@ bool sandfox::ui::canvas::end() {
 	return need_swap;
 }
 
-int sandfox::ui::canvas::emit(const std::string_view &uuid, const glm::vec2 &ul, const glm::vec2 &lr, std::function<render_action(element *)> poll, std::function<void(NVGcontext *, element *)> render) {
+int sandfox::ui::canvas::emit(const std::string_view &uuid, const glm::vec2 &ul, const glm::vec2 &lr, std::function<render_action(element *)> poll, std::function<void(NVGcontext *, element *)> render, std::any data) {
 	absent.erase(uuid.data());
 	element tmp;
 	int to_layer = -1, prev_layer = -1;
@@ -108,6 +108,7 @@ int sandfox::ui::canvas::emit(const std::string_view &uuid, const glm::vec2 &ul,
 	tmp.lr = lr;
 	tmp.poll = poll;
 	tmp.render = render;
+	if (data.has_value()) tmp.data = data;
 	for (int layer = 0; layer < proposed.size(); layer++) {
 		bool collision = false;
 		for (auto &other : proposed[layer]) {
