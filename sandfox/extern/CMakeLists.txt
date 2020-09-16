@@ -85,10 +85,27 @@ else()
 	message("-- Skipping building NNG because web build has been indicated.")
 endif()
 
+# MBEDTLS
+
+add_subdirectory(src/mbedtls)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/mbedtls/include)
+
+# CURL
+
+set(BUILD_CURL_EXE OFF)
+set(CMAKE_USE_OPENSSL OFF)
+set(CMAKE_USE_MBEDTLS ON)
+set(MBEDTLS_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src/mbedtls/include)
+set(MBEDCRYPTO_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/src/mbedtls/library/libmbedcrypto.a)
+set(MBEDTLS_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/src/mbedtls/library/libmbedtls.a)
+set(MBEDX509_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/src/mbedtls/library/libmbedx509.a)
+add_subdirectory(src/curl)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/curl/include)
+
 # PLATFORM SPECIFICS
 
 if(EMSCRIPTEN)
-	target_link_libraries(${PROJECT_NAME} freetype assimp spdlog uv_a lunasvg)
+	target_link_libraries(${PROJECT_NAME} freetype assimp spdlog uv_a lunasvg mbedcrypto mbedtls mbedx509 libcurl)
 	# set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY LINK_FLAGS "-s USE_GLFW=3 -s USE_WEBGL2=1 --shell-file shell_raylib.html")
 	# set(CMAKE_EXECUTABLE_SUFFIX ".html")
 else()
@@ -106,5 +123,5 @@ else()
 			target_link_libraries(${PROJECT_NAME} -lGL)
 		endif()
 	endif()
-	target_link_libraries(${PROJECT_NAME} glfw freetype assimp nng spdlog uv_a lunasvg)
+	target_link_libraries(${PROJECT_NAME} glfw freetype assimp nng spdlog uv_a lunasvg mbedcrypto mbedtls mbedx509 libcurl)
 endif()
