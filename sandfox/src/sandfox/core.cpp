@@ -24,7 +24,7 @@ void sf_impl_nvg_destroy(NVGcontext *);
 
 bool sandfox::core::init() {
 	if (!core::logger) {
-		core::logger = spdlog::stdout_color_mt("sandfox");
+		core::logger = spdlog::stdout_color_mt("Sandfox");
 		core::logger->set_level(spdlog::level::debug);
 		core::logger->set_pattern(core::default_logging_pattern);
 	}
