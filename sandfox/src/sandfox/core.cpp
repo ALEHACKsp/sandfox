@@ -102,6 +102,9 @@ bool sandfox::core::update() {
 }
 
 void sandfox::core::shutdown() {
+	glfwHideWindow(core::window);
+	core::logger->debug("Waiting for UV to finish everything...");
+	while (uv_run(uv_default_loop(), UV_RUN_DEFAULT) != 0);
 	if (core::nvg) sf_impl_nvg_destroy(core::nvg);
 	if (core::window) glfwDestroyWindow(core::window);
 	if (logger) logger->debug("Goodbye");
