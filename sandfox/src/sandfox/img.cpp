@@ -95,6 +95,7 @@ std::optional<std::shared_ptr<int>> sandfox::img::get(const id& key) {
 		baton->key = key;
 		baton->logger = spdlog::stdout_color_mt(fmt::format("{} {}x{}", std::get<0>(key), std::get<1>(key).x, std::get<1>(key).y));
 		baton->logger->set_level(sandfox::core::logger->level());
+		baton->logger->set_pattern(core::default_logging_pattern);
 		uv_queue_work(uv_default_loop(), worker, on_image_load, on_image_load_done);
 		baton->logger->debug("Queued: {}", reinterpret_cast<void *>(worker));
 		*new_cache_object = 0;
