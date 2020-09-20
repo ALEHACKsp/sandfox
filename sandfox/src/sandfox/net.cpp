@@ -24,6 +24,10 @@ namespace sandfox::net {
 		void reinitialize_socket();
 		void begin_connect();
 		void begin_connect_later();
+
+		~tcp_stream_data() {
+			uv_close(reinterpret_cast<uv_handle_t *>(&timer), [](uv_handle_t *handle) { });
+		}
 	};
 }
 
@@ -93,6 +97,7 @@ sandfox::net::tcp_stream::tcp_stream(const std::string &host, const int &port) :
 	if (uv_tcp_init(uv_default_loop(), &data->socket) != 0) data->logger->warn("Unable to initialize socket structure.");
 	if (uv_timer_init(uv_default_loop(), &data->timer) != 0) data->logger->warn("Unable to initialize timer structure.");
 	if (uv_ip4_addr(host.data(), port, &data->address) != 0) data->logger->warn("Unable to populate address structure.");
+	data->logger->debug("Socket Handle @ {}, Timer Handle @ {}", reinterpret_cast<void *>(&data->socket), reinterpret_cast<void *>(&data->timer));
 	data->socket.data = data;
 	data->connection.data = data;
 	data->timer.data = data;
