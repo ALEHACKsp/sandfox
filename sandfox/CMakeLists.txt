@@ -7,6 +7,7 @@ add_library(
 	src/sandfox/impl.cpp
 	src/sandfox/ui.cpp
 	src/sandfox/img.cpp
+	src/sandfox/net.cpp
 )
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 add_subdirectory(extern)
