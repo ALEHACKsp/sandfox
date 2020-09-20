@@ -16,7 +16,7 @@ static unsigned int concatenate(unsigned x, unsigned y) {
 	return x * pow + y;        
 }
 
-std::function<void(std::filesystem::path, std::shared_ptr<std::vector<char>>)> sandfox::img::on_fs_image_data;
+std::function<void(std::filesystem::path, std::shared_ptr<std::vector<char>>)> sandfox::img::on_new_image_data;
 
 namespace sandfox::img {
 	struct worker_baton {
@@ -69,7 +69,7 @@ void on_image_load(uv_work_t *request) {
 		memcpy(baton->data->data(), image_data, baton->data->size());
 		stbi_image_free(image_data);
 	}
-	if (sandfox::img::on_fs_image_data) sandfox::img::on_fs_image_data(fs_path, baton->data);
+	if (sandfox::img::on_new_image_data) sandfox::img::on_new_image_data(fs_path, baton->data);
 }
 
 void on_image_load_done(uv_work_t *request, int status) {

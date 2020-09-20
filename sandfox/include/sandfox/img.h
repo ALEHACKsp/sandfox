@@ -14,7 +14,7 @@ namespace sandfox::img {
 
 	using id = std::tuple<std::string, glm::ivec2>;
 
-	extern std::function<void(std::filesystem::path, std::shared_ptr<std::vector<char>>)> on_fs_image_data;
+	extern std::function<void(std::filesystem::path, std::shared_ptr<std::vector<char>>)> on_new_image_data;
 
 	std::optional<std::shared_ptr<int>> get(const id &key);
 	std::optional<std::shared_ptr<int>> find(const id &key);
