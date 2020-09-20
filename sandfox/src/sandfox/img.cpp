@@ -122,22 +122,42 @@ std::optional<std::shared_ptr<int>> sandfox::img::find(const id& key) {
 void sandfox::img::emit(ui::canvas *to, const std::string_view &uuid, const id &key, const glm::vec2 &center, const glm::vec2 &size) {
 	glm::vec2 ul = { glm::round(center.x - size.x * 0.5f), glm::round(center.y - size.y * 0.5f) };
 	glm::vec2 lr = { glm::round(ul.x + size.x), glm::round(ul.y + size.y) };
-	to->emit(
-		uuid,
-		ul,
-		lr,
-		[](ui::element *elm) {
-			return ui::nothing;
-		}, [](NVGcontext *ctx, ui::element *elm) {
-			auto img = img::get(std::any_cast<id>(elm->data));
-			if (!img.has_value()) return;
-			nvgBeginPath(ctx);
-			float w = glm::round(elm->lr.x - elm->ul.x);
-			float h = glm::round(elm->lr.y- elm->ul.y);
-			nvgRect(ctx, elm->ul.x, elm->ul.y, w, h);
-			nvgFillPaint(ctx, nvgImagePattern(ctx, elm->ul.x, elm->ul.y, w, h, 0, *img->get(), 1));
-			nvgFill(ctx);
-		},
-		key
-	);
+	auto pending = img::get(key);
+	if (!pending.has_value() || *pending->get() == 0) {
+		to->emit(
+			fmt::format("{}-alias", uuid),
+			ul,
+			lr,
+			[](ui::element *elm) {
+				return ui::nothing;
+			}, [](NVGcontext *ctx, ui::element *elm) {
+				nvgBeginPath(ctx);
+				float w = glm::round(elm->lr.x - elm->ul.x);
+				float h = glm::round(elm->lr.y- elm->ul.y);
+				nvgRoundedRect(ctx, elm->ul.x, elm->ul.y, w, h, 4);
+				nvgStrokeWidth(ctx, 2);
+				nvgStrokeColor(ctx, nvgRGBA(255, 0, 0, 192));
+				nvgStroke(ctx);
+			},
+			pending.value()
+		);
+	} else {
+		to->emit(
+			uuid,
+			ul,
+			lr,
+			[](ui::element *elm) {
+				return ui::nothing;
+			}, [](NVGcontext *ctx, ui::element *elm) {
+				auto img = std::any_cast<std::shared_ptr<int>>(elm->data);
+				nvgBeginPath(ctx);
+				float w = glm::round(elm->lr.x - elm->ul.x);
+				float h = glm::round(elm->lr.y- elm->ul.y);
+				nvgRect(ctx, elm->ul.x, elm->ul.y, w, h);
+				nvgFillPaint(ctx, nvgImagePattern(ctx, elm->ul.x, elm->ul.y, w, h, 0, *img, 1));
+				nvgFill(ctx);
+			},
+			pending.value()
+		);
+	}
 }
