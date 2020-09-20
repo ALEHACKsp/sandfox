@@ -9,6 +9,7 @@
 #include <uv.h>
 
 std::shared_ptr<spdlog::logger> sandfox::core::logger;
+std::string sandfox::core::default_logging_pattern = "%C%m%d %H%M [%^%L %n%$] %v";
 std::function<bool(void)> sandfox::core::on_init;
 std::function<bool(void)> sandfox::core::on_update;
 std::function<void(void)> sandfox::core::on_shutdown;
@@ -25,6 +26,7 @@ bool sandfox::core::init() {
 	if (!core::logger) {
 		core::logger = spdlog::stdout_color_mt("sandfox");
 		core::logger->set_level(spdlog::level::debug);
+		core::logger->set_pattern(core::default_logging_pattern);
 	}
 	glfwSetErrorCallback([](int code, const char *what) { core::logger->error(what); });
 	if (!core::window) {
