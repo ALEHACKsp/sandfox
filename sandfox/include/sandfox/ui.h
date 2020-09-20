@@ -4,7 +4,6 @@ struct NVGcontext;
 
 #include <chrono>
 #include <vector>
-#include <queue>
 #include <memory>
 #include <string>
 #include <string_view>
