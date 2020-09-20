@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <functional>
-#include <spdlog/spdlog.h>
+#include <spdlog/logger.h>
 #include <sandfox/ui.h>
 
 struct GLFWwindow;
