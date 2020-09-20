@@ -88,6 +88,8 @@ endif()
 
 # MBEDTLS
 
+option(ENABLE_PROGRAMS OFF)
+option(ENABLE_TESTING OFF)
 add_subdirectory(src/mbedtls)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/mbedtls/include)
 
