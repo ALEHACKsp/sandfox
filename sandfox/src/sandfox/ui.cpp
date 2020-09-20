@@ -1,4 +1,5 @@
 #include <sandfox/ui.h>
+#include <spdlog/spdlog.h>
 #include <nanovg.h>
 
 static inline bool contains(const std::pair<glm::vec2, glm::vec2> &a, const glm::vec2 &p) {
@@ -69,23 +70,43 @@ bool sandfox::ui::canvas::end() {
 			else if (response == render_action::redraw_deep) dirty.push_back({ 0, { E.second.ul, E.second.lr } });
 		}
 	}
-	nvgBeginFrame(state->nvgc, state->size.x, state->size.y, 1);
-	for (auto &dirty_area : dirty) {
-		for (int layer = dirty_area.first; layer < proposed.size(); layer++) {
-			for (auto &E : proposed[layer]) {
-				if (!intersecting({ E.second.ul, E.second.lr }, dirty_area.second)) continue;
-				nvgScissor(state->nvgc, dirty_area.second.first.x, dirty_area.second.first.y, dirty_area.second.second.x - dirty_area.second.first.x, dirty_area.second.second.y - dirty_area.second.first.y);
-				nvgIntersectScissor(state->nvgc, E.second.ul.x, E.second.ul.y, E.second.lr.x - E.second.ul.x, E.second.lr.y - E.second.ul.y);
+	if (dirty.size()) {
+		int render_num = 0;
+		nvgBeginFrame(state->nvgc, state->size.x, state->size.y, 1);
+		for (int layer = 0; layer < proposed.size(); layer++) {
+			for (auto &element : proposed[layer]) {
+				nvgScissor(state->nvgc, element.second.ul.x, element.second.ul.y, element.second.lr.x - element.second.ul.x, element.second.lr.y - element.second.ul.y);
 				nvgSave(state->nvgc);
-				E.second.render(state->nvgc, &E.second);
+				element.second.render(state->nvgc, &element.second);
 				nvgRestore(state->nvgc);
 				nvgResetScissor(state->nvgc);
 				need_swap = true;
+				render_num++;
 			}
 		}
+		nvgEndFrame(state->nvgc);
+		/*
+		nvgBeginFrame(state->nvgc, state->size.x, state->size.y, 1);
+		for (auto &dirty_area : dirty) {
+			for (int layer = dirty_area.first; layer < proposed.size(); layer++) {
+				for (auto &E : proposed[layer]) {
+					if (!intersecting({ E.second.ul, E.second.lr }, dirty_area.second)) continue;
+					nvgScissor(state->nvgc, dirty_area.second.first.x, dirty_area.second.first.y, dirty_area.second.second.x - dirty_area.second.first.x, dirty_area.second.second.y - dirty_area.second.first.y);
+					nvgIntersectScissor(state->nvgc, E.second.ul.x, E.second.ul.y, E.second.lr.x - E.second.ul.x, E.second.lr.y - E.second.ul.y);
+					nvgSave(state->nvgc);
+					E.second.render(state->nvgc, &E.second);
+					nvgRestore(state->nvgc);
+					nvgResetScissor(state->nvgc);
+					need_swap = true;
+					render_num++;
+				}
+			}
+		}
+		nvgEndFrame(state->nvgc);
+		*/
+		spdlog::info("Updated: {} dirty areas, {} render calls", dirty.size(), render_num);
+		dirty.clear();
 	}
-	nvgEndFrame(state->nvgc);
-	dirty.clear();
 	finalized = proposed;
 	for (int finalized_layer_index = 0; finalized_layer_index < finalized.size(); finalized_layer_index++)
 		for (auto &finalized_element : finalized[finalized_layer_index])
