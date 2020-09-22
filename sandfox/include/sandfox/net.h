@@ -11,7 +11,7 @@ namespace sandfox::net {
 
 	class tcp_stream {
 
-		struct tcp_stream_data *data;
+		tcp_stream_data *data;
 
 	public:
 
