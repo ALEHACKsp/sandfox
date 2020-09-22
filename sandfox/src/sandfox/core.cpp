@@ -59,6 +59,9 @@ bool sandfox::core::init() {
 	glfwSetCursorEnterCallback(core::window, [](GLFWwindow *, int entered) {
 		if (core::canvas && core::canvas->state) core::canvas->state->cursor_enabled = entered;
 	});
+	glfwSetMouseButtonCallback(core::window, [](GLFWwindow *, int button, int action, int mods) {
+		if (core::canvas && core::canvas->state) core::canvas->state->mouse_buttons[button] = action;
+	});
 	glfwMakeContextCurrent(core::window);
 	if (!gladLoadGLES2Loader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
 		core::logger->error("GLAD GLES2 load failure.");
