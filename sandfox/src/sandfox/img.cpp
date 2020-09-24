@@ -83,7 +83,7 @@ void on_image_load_done(uv_work_t *request, int status) {
 	if (baton->data) {
 		if (int new_texture = nvgCreateImageRGBA(sandfox::core::nvg, std::get<1>(baton->key).x, std::get<1>(baton->key).y, 0, reinterpret_cast<const unsigned char *>(baton->data->data())); new_texture) {
 			*sandfox::img::instance_cache[std::get<0>(baton->key)][concatenate(std::get<1>(baton->key).x, std::get<1>(baton->key).y)] = new_texture;
-			sandfox::img::data_cache[std::get<0>(baton->key)] = baton->data;
+			// sandfox::img::data_cache[std::get<0>(baton->key)] = baton->data;
 			baton->logger->debug("Loaded into GL texture #{}.", new_texture);
 		} else baton->logger->error("Unable to generate texture from image data.");
 	} else baton->logger->warn("Unable to retrieve image data.");
