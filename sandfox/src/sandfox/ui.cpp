@@ -2,11 +2,11 @@
 #include <spdlog/spdlog.h>
 #include <nanovg.h>
 
-static inline bool contains(const std::pair<glm::vec2, glm::vec2> &a, const glm::vec2 &p) {
+static inline bool contains(const sandfox::ui::area &a, const sandfox::ui::point &p) {
 	return p.x >= a.first.x && p.x < a.second.x && p.y >= a.first.y && p.y < a.second.y;
 }
 
-static inline bool intersecting(const std::pair<glm::vec2, glm::vec2> &a, const std::pair<glm::vec2, glm::vec2> &b) {
+static inline bool intersecting(const sandfox::ui::area &a, const sandfox::ui::area &b) {
 	return a.first.x < b.second.x && a.second.x > b.first.x && a.first.y < b.second.y && a.second.y > b.first.y;
 }
 
@@ -104,7 +104,7 @@ bool sandfox::ui::canvas::end() {
 		}
 		nvgEndFrame(state->nvgc);
 		*/
-		spdlog::info("Updated: {} dirty areas, {} render calls", dirty.size(), render_num);
+		// spdlog::info("Updated: {} dirty areas, {} render calls", dirty.size(), render_num);
 		dirty.clear();
 	}
 	finalized = proposed;
@@ -115,7 +115,7 @@ bool sandfox::ui::canvas::end() {
 	return need_swap;
 }
 
-int sandfox::ui::canvas::emit(const std::string_view &uuid, const glm::vec2 &ul, const glm::vec2 &lr, std::function<render_action(element *)> poll, std::function<void(NVGcontext *, element *)> render, std::any data) {
+int sandfox::ui::canvas::emit(const std::string_view &uuid, const point &ul, const point &lr, std::function<render_action(element *)> poll, std::function<void(NVGcontext *, element *)> render, std::any data) {
 	absent.erase(uuid.data());
 	element tmp;
 	int to_layer = -1, prev_layer = -1;
@@ -129,6 +129,7 @@ int sandfox::ui::canvas::emit(const std::string_view &uuid, const glm::vec2 &ul,
 	tmp.lr = lr;
 	tmp.poll = poll;
 	tmp.render = render;
+	tmp.uuid = uuid;
 	if (data.has_value()) tmp.data = data;
 	for (int layer = 0; layer < proposed.size(); layer++) {
 		bool collision = false;
