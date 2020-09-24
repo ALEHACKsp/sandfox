@@ -57,7 +57,12 @@ bool sandfox::core::init() {
 		}
 	});
 	glfwSetWindowRefreshCallback(core::window, [](GLFWwindow *) {
-		if (core::canvas && core::canvas->state) core::canvas->dirty.push_back({ 0, { { 0, 0 }, { core::canvas->state->size.x, core::canvas->state->size.y } } });
+		if (core::canvas && core::canvas->state) {
+			core::canvas->dirty.push_back({ 0, { { 0, 0 }, { core::canvas->state->size.x, core::canvas->state->size.y } } });
+			#ifdef _WIN32
+			if (core::on_update) core::on_update();
+			#endif
+		}
 	});
 	glfwSetCursorPosCallback(core::window, [](GLFWwindow *, double x, double y) {
 		if (core::canvas && core::canvas->state) core::canvas->state->cur = { x, y };
