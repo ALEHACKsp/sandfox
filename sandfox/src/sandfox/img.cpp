@@ -57,19 +57,25 @@ void on_image_load(uv_work_t *request) {
 			return;
 		}
 		baton->data = std::make_shared<std::vector<char>>();
+		bool copy_original_data = true;
 		if (w != std::get<1>(baton->key).x || h != std::get<1>(baton->key).y) {
 			baton->logger->debug("Native size is {}x{}; resizing to {}x{}.", w, h, std::get<1>(baton->key).x, std::get<1>(baton->key).x);
 			baton->data->resize(std::get<1>(baton->key).x * std::get<1>(baton->key).y * 4);
 			if (stbir_resize_uint8(image_data, w, h, 0, reinterpret_cast<unsigned char *>(baton->data->data()), std::get<1>(baton->key).x, std::get<1>(baton->key).y, 0, 4)) {
 				stbi_image_free(image_data);
-				return;
+				copy_original_data = false;
 			} else baton->logger->warn("Failed to resize. Keeping native size.");
 		}
-		baton->data->resize(w * h * 4);
-		memcpy(baton->data->data(), image_data, baton->data->size());
-		stbi_image_free(image_data);
+		if (copy_original_data) {
+			baton->data->resize(w * h * 4);
+			memcpy(baton->data->data(), image_data, baton->data->size());
+			stbi_image_free(image_data);
+		}
 	}
-	if (sandfox::img::on_new_image_data) sandfox::img::on_new_image_data(fs_path, baton->data);
+	if (sandfox::img::on_new_image_data) {
+		baton->logger->debug("Running user callback on data...");
+		sandfox::img::on_new_image_data(fs_path, baton->data);
+	}
 }
 
 void on_image_load_done(uv_work_t *request, int status) {
