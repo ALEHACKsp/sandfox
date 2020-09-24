@@ -13,6 +13,17 @@ namespace sandfox::core {
 	extern GLFWwindow *window;
 	extern NVGcontext *nvg;
 
+	enum class cursor {
+		normal,
+		beam,
+		cross,
+		hand,
+		h_res,
+		v_res
+	};
+
+	extern cursor active_cursor;
+
 	extern std::shared_ptr<spdlog::logger> logger;
 	extern std::string default_logging_pattern;
 

@@ -18,6 +18,12 @@ std::shared_ptr<sandfox::ui::canvas> sandfox::core::canvas;
 GLFWwindow *sandfox::core::window = 0;
 NVGcontext *sandfox::core::nvg = 0;
 
+sandfox::core::cursor sandfox::core::active_cursor = sandfox::core::cursor::normal;
+
+namespace sandfox::core {
+	cursor applied_cursor = active_cursor;
+}
+
 //impl.cpp
 NVGcontext *sf_impl_nvg_create();
 void sf_impl_nvg_destroy(NVGcontext *);
@@ -101,15 +107,41 @@ bool sandfox::core::update() {
 	uv_run(uv_default_loop(), UV_RUN_NOWAIT);
 	auto video_mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 	glfwWaitEventsTimeout(video_mode ? 1.0 / video_mode->refreshRate : 1.0 / 30.0);
-	return (core::on_update ? core::on_update() : true) && (core::window && !glfwWindowShouldClose(core::window));
+	active_cursor = cursor::normal;
+	bool keep_running = (core::on_update ? core::on_update() : true) && (core::window && !glfwWindowShouldClose(core::window));
+	if (!keep_running) return false;
+	if (active_cursor != applied_cursor) {
+		static GLFWcursor *glfw_cursor_normal = 0;
+		static GLFWcursor *glfw_cursor_beam = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+		static GLFWcursor *glfw_cursor_cross = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
+		static GLFWcursor *glfw_cursor_hand = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+		static GLFWcursor *glfw_cursor_h_res = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+		static GLFWcursor *glfw_cursor_v_res = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
+		switch (active_cursor) {
+			case cursor::normal: glfwSetCursor(core::window, glfw_cursor_normal); break;
+			case cursor::beam: glfwSetCursor(core::window, glfw_cursor_beam); break;
+			case cursor::cross: glfwSetCursor(core::window, glfw_cursor_cross); break;
+			case cursor::hand: glfwSetCursor(core::window, glfw_cursor_hand); break;
+			case cursor::h_res: glfwSetCursor(core::window, glfw_cursor_h_res); break;
+			case cursor::v_res: glfwSetCursor(core::window, glfw_cursor_v_res); break;
+		}
+		applied_cursor = active_cursor;
+		core::logger->debug("Updated cursor: {}", static_cast<int>(applied_cursor));
+	}
+	return true;
 }
 
 static void sf_wait_for_uv() {
 	if (int initial = uv_run(uv_default_loop(), UV_RUN_NOWAIT); initial) {
 		uv_walk(uv_default_loop(), [](uv_handle_t *handle, void *arg) {
-			sandfox::core::logger->warn("UV handle is open: {}", reinterpret_cast<void *>(handle));
+			if (uv_is_closing(handle) == 0) {
+				sandfox::core::logger->warn("Handle {} was left open; it will be closed.", reinterpret_cast<void *>(handle));
+				uv_close(handle, [](uv_handle_t *handle) {
+					sandfox::core::logger->debug("Closed handle: {}", reinterpret_cast<void *>(handle));
+				});
+			}
 		}, 0);
-		sandfox::core::logger->debug("Waiting for all UV handles to close...");
+		sandfox::core::logger->debug("Waiting for UV to finish.");
 		while (uv_run(uv_default_loop(), UV_RUN_DEFAULT) != 0);
 	} else sandfox::core::logger->debug("UV is clean. No handles open.");
 }
