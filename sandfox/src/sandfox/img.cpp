@@ -119,7 +119,7 @@ std::optional<std::shared_ptr<int>> sandfox::img::find(const id& key) {
 	return std::nullopt;
 }
 
-void sandfox::img::emit(ui::canvas *to, const std::string_view &uuid, const id &key, const glm::vec2 &center, const glm::vec2 &size) {
+void sandfox::img::emit(ui::canvas *to, const std::string_view &uuid, const id &key, const glm::vec2 &center, const glm::vec2 &size, const glm::vec4 &color) {
 	glm::vec2 ul = { glm::round(center.x - size.x * 0.5f), glm::round(center.y - size.y * 0.5f) };
 	glm::vec2 lr = { glm::round(ul.x + size.x), glm::round(ul.y + size.y) };
 	auto pending = img::get(key);
@@ -149,15 +149,17 @@ void sandfox::img::emit(ui::canvas *to, const std::string_view &uuid, const id &
 			[](ui::element *elm) {
 				return ui::nothing;
 			}, [](NVGcontext *ctx, ui::element *elm) {
-				auto img = std::any_cast<std::shared_ptr<int>>(elm->data);
+				auto [img, color] = std::any_cast<std::pair<std::shared_ptr<int>, glm::vec4>>(elm->data);
 				nvgBeginPath(ctx);
 				float w = glm::round(elm->lr.x - elm->ul.x);
 				float h = glm::round(elm->lr.y- elm->ul.y);
 				nvgRect(ctx, elm->ul.x, elm->ul.y, w, h);
-				nvgFillPaint(ctx, nvgImagePattern(ctx, elm->ul.x, elm->ul.y, w, h, 0, *img, 1));
+				auto paint = nvgImagePattern(ctx, elm->ul.x, elm->ul.y, w, h, 0, *img, color.a);
+				paint.innerColor = nvgRGBAf(color.r, color.g, color.b, 1);
+				nvgFillPaint(ctx, paint);
 				nvgFill(ctx);
 			},
-			pending.value()
+			std::make_pair(pending.value(), color)
 		);
 	}
 }

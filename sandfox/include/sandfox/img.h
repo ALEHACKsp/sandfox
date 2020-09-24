@@ -2,6 +2,7 @@
 
 #include <sandfox/ui.h>
 #include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 #include <string>
 #include <string_view>
 #include <functional>
@@ -19,5 +20,5 @@ namespace sandfox::img {
 	std::optional<std::shared_ptr<int>> get(const id &key);
 	std::optional<std::shared_ptr<int>> find(const id &key);
 
-	void emit(ui::canvas *to, const std::string_view &uuid, const id &key, const glm::vec2 &center, const glm::vec2 &size);
+	void emit(ui::canvas *to, const std::string_view &uuid, const id &key, const glm::vec2 &center, const glm::vec2 &size, const glm::vec4 &color = { 1, 1, 1, 1 });
 }
