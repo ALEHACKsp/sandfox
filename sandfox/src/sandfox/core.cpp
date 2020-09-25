@@ -74,11 +74,13 @@ bool sandfox::core::init() {
 		if (core::canvas && core::canvas->state) core::canvas->state->mouse_buttons[button] = action;
 	});
 	glfwMakeContextCurrent(core::window);
+	#ifndef __EMSCRIPTEN__
 	if (!gladLoadGLES2Loader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
 		core::logger->error("GLAD GLES2 load failure.");
 		core::shutdown();
 		return false;
 	} else core::logger->debug("GLAD loaded fine.");
+	#endif
 	core::logger->debug("OpenGL: {} ({})", glGetString(GL_VERSION), glGetString(GL_RENDERER));
 	core::logger->debug("Shading Language: {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
 	if (!core::nvg) {
