@@ -142,22 +142,23 @@ static void sf_wait_for_uv() {
 	if (int initial = uv_run(uv_default_loop(), UV_RUN_NOWAIT); initial) {
 		uv_walk(uv_default_loop(), [](uv_handle_t *handle, void *arg) {
 			if (uv_is_closing(handle) == 0) {
-				sandfox::core::logger->warn("Handle {} was left open; it will be closed.", reinterpret_cast<void *>(handle));
+				if (sandfox::core::logger) sandfox::core::logger->warn("Handle {} was left open; it will be closed.", reinterpret_cast<void *>(handle));
 				uv_close(handle, [](uv_handle_t *handle) {
-					sandfox::core::logger->debug("Closed handle: {}", reinterpret_cast<void *>(handle));
+					if (sandfox::core::logger) sandfox::core::logger->debug("Closed handle: {}", reinterpret_cast<void *>(handle));
 				});
 			}
 		}, 0);
-		sandfox::core::logger->debug("Waiting for UV to finish.");
+		if (sandfox::core::logger) sandfox::core::logger->debug("Waiting for UV to finish.");
 		while (uv_run(uv_default_loop(), UV_RUN_DEFAULT) != 0);
-	} else sandfox::core::logger->debug("UV is clean. No handles open.");
+	} else if (sandfox::core::logger) sandfox::core::logger->debug("UV is clean. No handles open.");
 }
 
 void sandfox::core::shutdown() {
-	glfwHideWindow(core::window);
+	if (core::window) glfwHideWindow(core::window);
 	sf_wait_for_uv();
 	if (core::nvg) sf_impl_nvg_destroy(core::nvg);
 	if (core::window) glfwDestroyWindow(core::window);
+	glfwTerminate();
 	if (logger) logger->debug("Goodbye");
 	core::nvg = 0;
 	core::window = 0;
