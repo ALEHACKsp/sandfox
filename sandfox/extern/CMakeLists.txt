@@ -30,8 +30,17 @@ option(WITH_APPS OFF)
 
 # UV
 
-add_subdirectory(src/uv)
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/uv/include)
+if(NOT EMSCRIPTEN)
+	add_subdirectory(src/uv)
+	target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/uv/include)
+else()
+	message("-- Skipping building UV because web build has been indicated.")
+endif()
+
+# ENET
+
+add_subdirectory(src/enet)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/enet/include)
 
 # SYNAPSE
 
@@ -108,7 +117,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/sr
 # PLATFORM SPECIFICS
 
 if(EMSCRIPTEN)
-	target_link_libraries(${PROJECT_NAME} freetype assimp spdlog uv_a lunasvg mbedcrypto mbedtls mbedx509 libcurl)
+	target_link_libraries(${PROJECT_NAME} freetype assimp spdlog lunasvg mbedcrypto mbedtls mbedx509 libcurl enet)
 	# set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY LINK_FLAGS "-s USE_GLFW=3 -s USE_WEBGL2=1 --shell-file shell_raylib.html")
 	# set(CMAKE_EXECUTABLE_SUFFIX ".html")
 else()
@@ -126,5 +135,5 @@ else()
 			target_link_libraries(${PROJECT_NAME} -lGL)
 		endif()
 	endif()
-	target_link_libraries(${PROJECT_NAME} glfw freetype assimp nng spdlog uv_a lunasvg mbedcrypto mbedtls mbedx509 libcurl)
+	target_link_libraries(${PROJECT_NAME} glfw freetype assimp nng spdlog uv_a lunasvg mbedcrypto mbedtls mbedx509 libcurl enet)
 endif()
